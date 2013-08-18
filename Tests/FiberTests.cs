@@ -64,84 +64,12 @@ namespace Tests
         }
 
         [TestMethod]
-        public void WriteAsyncExecutionOrderIsCorrect()
-        {
-            const int WRITE_COUNT = 1000;
-
-            ConcurrentQueue<int?> queue = new ConcurrentQueue<int?>();
-
-            Fiber fiber = new Fiber();
-
-            for (int i = 0; i < WRITE_COUNT; i++)
-            {
-                int? x = i;
-                Task t = fiber.EnqueueAsync(async () =>
-                {
-                    await Task.Delay(0);
-                    queue.Enqueue(x);
-                }, true);
-            }
-
-            while (queue.Count != WRITE_COUNT)
-            {
-                Thread.Sleep(10);
-            }
-
-            Assert.IsTrue(queue.Zip(Enumerable.Range(0, WRITE_COUNT), (i, j) => i == j).All(b => b));
-        }
-
-        [TestMethod]
-        public void ReadWriteAsyncExecutionOrderIsCorrect()
-        {
-            int? state = 0;
-
-            Fiber fiber = new Fiber();
-
-            fiber.EnqueueAsync(async () =>
-            {
-                await Task.Delay(100);
-                Assert.AreEqual(state.Value, 0);
-            });
-
-            fiber.EnqueueAsync(async () =>
-            {
-                await Task.Delay(0);
-                state = 1;
-            }, true);
-
-            Task finalTask = fiber.EnqueueAsync(async () =>
-            {
-                await Task.Delay(0);
-                Assert.AreEqual(state.Value, 1);
-            });
-
-            finalTask.Wait();
-        }
-
-        [TestMethod]
         public void ReadsCorrectValue()
         {
             Fiber fiber = new Fiber();
             int random = new Random().Next();
 
             Task<int> result = fiber.Enqueue(() => random);
-            result.Wait();
-
-            Assert.AreEqual(result.Result, random);
-        }
-
-        [TestMethod]
-        public void ReadsCorrectValueAsync()
-        {
-            Fiber fiber = new Fiber();
-            int random = new Random().Next();
-
-            Task<int> result = fiber.EnqueueAsync(async () => 
-            {
-                await Task.Delay(0);
-                return random;
-            });
-
             result.Wait();
 
             Assert.AreEqual(result.Result, random);
