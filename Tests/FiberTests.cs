@@ -26,7 +26,7 @@ namespace Tests
                 fiber.Enqueue(() => 
                 {
                     queue.Enqueue(x);
-                }, true);
+                });
             }
 
             while (queue.Count != WRITE_COUNT)
@@ -48,17 +48,17 @@ namespace Tests
             {
                 Thread.Sleep(100);
                 Assert.AreEqual(state.Value, 0);
-            });
+            }, false);
 
             fiber.Enqueue(() =>
             {
                 state = 1;
-            }, true);
+            });
 
             Task finalTask = fiber.Enqueue(() =>
             {
                 Assert.AreEqual(state.Value, 1);
-            });
+            }, false);
 
             finalTask.Wait();
         }
@@ -69,7 +69,7 @@ namespace Tests
             Fiber fiber = new Fiber();
             int random = new Random().Next();
 
-            Task<int> result = fiber.Enqueue(() => random);
+            Task<int> result = fiber.Enqueue(() => random, false);
             result.Wait();
 
             Assert.AreEqual(result.Result, random);
@@ -87,7 +87,7 @@ namespace Tests
             Task t = fiber.Schedule(() =>
             {
                 state = true;
-            }, waitTime);
+            }, waitTime, false);
 
             t.Wait();
 
