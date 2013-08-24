@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace Utility
+namespace TPLFiber
 {
     /// <summary>
     /// A synchronised fiber that uses the default thread pool and TPL
@@ -61,9 +60,29 @@ namespace Utility
             return Task.Delay(waitTime).ContinueWith((t) => Enqueue<T>(f, exclusive)).Unwrap();
         }
 
+        /// <summary>
+        /// Prevent the fiber from accepting any more jobs.
+        /// </summary>
+        public void Stop()
+        {
+            m_schedulers.Complete();
+        }
+
         private void Start(Task t, bool exclusive)
         {
-            t.Start(exclusive ? m_schedulers.ExclusiveScheduler : m_schedulers.ConcurrentScheduler);
+            try
+            {
+                t.Start(exclusive ? m_schedulers.ExclusiveScheduler : m_schedulers.ConcurrentScheduler);
+            }
+            catch (TaskSchedulerException ex)
+            {
+                //InvalidOperationException will throw if the fiber is stopped but something tries to enqueue another job
+                if (!(ex.InnerException is InvalidOperationException))
+                {
+                    //Rethrow anything that's not an invalid operation exception
+                    throw ex;
+                }
+            }
         }
     }
 }
